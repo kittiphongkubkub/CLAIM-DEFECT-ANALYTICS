@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim Defect Analytics Dashboard</title>
+    <!-- Google Fonts: Inter for numbers, Kanit for Thai labels/UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Dark Theme Colors (Default) */
+            --bg-color: #0b0c16;
+            --bg-gradient: radial-gradient(circle at 50% 50%, #151632 0%, #06070d 100%);
+            --card-bg: rgba(255, 255, 255, 0.04);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-sub: #a2a5b9;
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.4);
+            --secondary: #06b6d4;
+            --secondary-glow: rgba(6, 182, 212, 0.4);
+            --accent-pink: #ec4899;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --filter-bg: rgba(255, 255, 255, 0.06);
+            --tab-active: rgba(255, 255, 255, 0.1);
+            --tab-hover: rgba(255, 255, 255, 0.06);
+            --shadow-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            --input-border: rgba(255, 255, 255, 0.15);
+            --option-bg: #151632;
+        }
+
+        [data-theme="light"] {
+            /* Light Theme Colors */
+            --bg-color: #f3f4f6;
+            --bg-gradient: radial-gradient(circle at 50% 50%, #f9fafb 0%, #e5e7eb 100%);
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --text-main: #1f2937;
+            --text-sub: #4b5563;
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.2);
+            --secondary: #0891b2;
+            --secondary-glow: rgba(8, 145, 178, 0.2);
+            --accent-pink: #db2777;
+            --accent-green: #059669;
+            --accent-amber: #d97706;
+            --filter-bg: rgba(0, 0, 0, 0.03);
+            --tab-active: rgba(0, 0, 0, 0.08);
+            --tab-hover: rgba(0, 0, 0, 0.04);
+            --shadow-glow: 0 8px 24px 0 rgba(31, 41, 55, 0.1);
+            --input-border: rgba(0, 0, 0, 0.15);
+            --option-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        body {
+            font-family: 'Kanit', 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* -------------------------------------------------------------
+           Header Styling
+        ------------------------------------------------------------- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .header-logo {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .header-logo h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, var(--secondary), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-logo p {
+            font-size: 13px;
+            color: var(--text-sub);
+            font-family: 'Inter', 'Kanit', sans-serif;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .theme-toggle-btn {
+            background: var(--filter-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-toggle-btn:hover {
+            background: var(--tab-hover);
+        }
+
+        .data-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: var(--filter-bg);
+            border: 1px solid var(--card-border);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-amber);
+            box-shadow: 0 0 8px var(--accent-amber);
+        }
+
+        .status-dot.success {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        /* -------------------------------------------------------------
+           CSV Upload Modal / Area
+        ------------------------------------------------------------- */
+        .csv-drop-zone {
+            background: var(--card-bg);
+            border: 2px dashed var(--card-border);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-glow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .csv-drop-zone:hover {
+            border-color: var(--secondary);
+            background: var(--tab-hover);
+        }
+
+        .csv-drop-zone h3 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .csv-drop-zone p {
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn-upload {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-upload:hover {
+            opacity: 0.9;
+        }
+
+        /* -------------------------------------------------------------
+           Interactive Filter Panel
+        ------------------------------------------------------------- */
+        .filter-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-glow);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-sub);
+        }
+
+        .filter-group select {
+            background: var(--filter-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 10px;
+            outline: none;
+            font-size: 14px;
+            font-family: 'Kanit', sans-serif;
+            cursor: pointer;
+        }
+
+        .filter-group select:focus {
+            border-color: var(--secondary);
+        }
+
+        .filter-group select option {
+            background-color: var(--option-bg);
+            color: var(--text-main);
+        }
+
+        /* -------------------------------------------------------------
+           KPI Scorecards Panel
+        ------------------------------------------------------------- */
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-glow);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .kpi-card.claims::before { background: var(--secondary); }
+        .kpi-card.parts::before { background: var(--accent-green); }
+        .kpi-card.cost::before { background: var(--accent-amber); }
+        .kpi-card.mtbf::before { background: var(--accent-pink); }
+
+        .kpi-label {
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .kpi-value {
+            font-size: 26px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text-main) 30%, var(--text-sub) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .kpi-subtext {
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        /* -------------------------------------------------------------
+           Navigation Tabs
+        ------------------------------------------------------------- */
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-sub);
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Kanit', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            background: var(--tab-hover);
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            background: var(--tab-active);
+            border-color: var(--card-border);
+            color: var(--text-main);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* -------------------------------------------------------------
+           Main Content Area (Tab Views)
+        ------------------------------------------------------------- */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-glow);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+
+        @media (max-width: 992px) {
+            .col-8, .col-6, .col-4 { grid-column: span 12; }
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+        }
+
+        /* -------------------------------------------------------------
+           Word Cloud & Voice of Customer Styling
+        ------------------------------------------------------------- */
+        .voc-wordcloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-content: center;
+            padding: 20px;
+            min-height: 250px;
+            background: var(--filter-bg);
+            border-radius: 12px;
+            border: 1px dashed var(--card-border);
+        }
+
+        .word-tag {
+            cursor: pointer;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .word-tag:hover {
+            border-color: var(--secondary);
+            box-shadow: 0 0 10px var(--secondary-glow);
+            transform: scale(1.05);
+        }
+
+        .word-tag.selected {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
+            color: white;
+        }
+
+        .word-tag .count {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            opacity: 0.8;
+            background: rgba(0,0,0,0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        /* -------------------------------------------------------------
+           Summary Insights Card
+        ------------------------------------------------------------- */
+        .insight-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-sub);
+        }
+
+        .insight-item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .insight-bullet {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--secondary);
+            margin-top: 8px;
+            flex-shrink: 0;
+        }
+
+        .insight-text strong {
+            color: var(--text-main);
+        }
+
+        /* -------------------------------------------------------------
+           Toggle switches / generic styling
+        ------------------------------------------------------------- */
+        .toggle-btn-group {
+            display: flex;
+            background: var(--filter-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 3px;
+        }
+
+        .toggle-sub-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        .toggle-sub-btn.active {
+            background: var(--card-bg);
+            color: var(--text-main);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        /* Lucide icon integration */
+        .lucide {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2px;
+            vertical-align: middle;
+            display: inline-block;
+        }
+        
+        .tab-btn .lucide {
+            margin-right: 6px;
+        }
+
+        .card-title .lucide {
+            margin-right: 4px;
+        }
+
+        /* Detail table styling */
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+        .detail-table th {
+            position: sticky;
+            top: 0;
+            background: var(--bg-color);
+            z-index: 10;
+            padding: 12px 10px;
+            border-bottom: 2px solid var(--card-border);
+            font-weight: 500;
+            color: var(--text-sub);
+        }
+        .detail-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--card-border);
+            color: var(--text-main);
+        }
+        .detail-table tbody tr:hover {
+            background: var(--tab-hover);
+        }
+        .table-wrapper::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: var(--card-border);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <!-- Header Panel -->
+    <header>
+        <div class="header-logo">
+            <h1 style="display: flex; align-items: center; gap: 8px;"><i data-lucide="car" style="width: 26px; height: 26px; color: var(--secondary);"></i> CLAIM DEFECT ANALYTICS</h1>
+            <p>Interactive Claim Analysis Dashboard • April 2026</p>
+        </div>
+        <div class="header-controls">
+            <div class="data-status">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="status-text">กำลังโหลดข้อมูล...</span>
+            </div>
+            <button class="theme-toggle-btn" onclick="toggleTheme()">
+                <i data-lucide="sun-moon"></i> สลับโหมดสี
+            </button>
+        </div>
+    </header>
+
+    <!-- CSV Drop/Upload Zone -->
+    <div class="csv-drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <i data-lucide="upload-cloud" style="width: 48px; height: 48px; color: var(--secondary);"></i>
+        <h3>ลากและวางไฟล์ข้อมูลการเคลม หรือคลิกเพื่ออัปโหลด</h3>
+        <p>รองรับเฉพาะไฟล์ CSV เท่านั้น (เช่น Claim data April 2026.csv)</p>
+        <button class="btn-upload">เลือกไฟล์ CSV</button>
+        <input type="file" id="file-input" class="file-input" accept=".csv" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- Filter Dashboard Section -->
+    <div class="filter-panel" id="filter-panel" style="display: none;">
+        <div class="filter-group">
+            <label for="filter-model">รุ่นรถ (Model)</label>
+            <select id="filter-model" onchange="applyFilters()">
+                <option value="All">-- แสดงทุกรุ่น --</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-region">ภูมิภาค (Region)</label>
+            <select id="filter-region" onchange="applyFilters()">
+                <option value="All">-- แสดงทุกภูมิภาค --</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-problem-type">ประเภทระบบที่มีปัญหา</label>
+            <select id="filter-problem-type" onchange="applyFilters()">
+                <option value="All">-- แสดงทุกระบบ --</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-distance">ระยะไมล์รถสะสม</label>
+            <select id="filter-distance" onchange="applyFilters()">
+                <option value="All">-- แสดงทุกระยะไมล์ --</option>
+                <option value="0-5k">0 - 5,000 km</option>
+                <option value="5k-15k">5,001 - 15,000 km</option>
+                <option value="15k-30k">15,001 - 30,000 km</option>
+                <option value="30k+">30,000+ km</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- KPI Scorecards Section -->
+    <div class="kpi-container" id="kpi-panel" style="display: none;">
+        <div class="kpi-card claims">
+            <div class="kpi-label">จำนวนการเคลมทั้งหมด</div>
+            <div class="kpi-value" id="kpi-total-claims">0</div>
+            <div class="kpi-subtext">เคสเคลมในระบบ</div>
+        </div>
+        <div class="kpi-card parts">
+            <div class="kpi-label">จำนวนชิ้นส่วนรวม</div>
+            <div class="kpi-value" id="kpi-total-qty">0</div>
+            <div class="kpi-subtext">ชิ้นส่วนที่ถูกเปลี่ยนเคลม</div>
+        </div>
+        <div class="kpi-card cost">
+            <div class="kpi-label">มูลค่าเคลมรวมสะสม</div>
+            <div class="kpi-value" id="kpi-total-cost">฿0.00</div>
+            <div class="kpi-subtext">ราคารวม (THB)</div>
+        </div>
+        <div class="kpi-card mtbf">
+            <div class="kpi-label">ระยะเวลาก่อนเคลมเฉลี่ย (MTBF)</div>
+            <div class="kpi-value" id="kpi-mtbf">0 วัน</div>
+            <div class="kpi-subtext">เฉลี่ยเวลาตั้งแต่ขายถึงเสีย</div>
+        </div>
+    </div>
+
+    <!-- Tabbed Navigation -->
+    <div class="nav-tabs" id="nav-tabs" style="display: none;">
+        <button class="tab-btn active" onclick="switchTab(event, 'executive-tab')"><i data-lucide="layout-dashboard"></i> Executive Overview & Daily</button>
+        <button class="tab-btn" onclick="switchTab(event, 'geo-tab')"><i data-lucide="globe"></i> Region & Dealer Analysis</button>
+        <button class="tab-btn" onclick="switchTab(event, 'model-tab')"><i data-lucide="wrench"></i> Model & Part Defects</button>
+        <button class="tab-btn" onclick="switchTab(event, 'voc-tab')"><i data-lucide="message-square"></i> Customer Voice & Root Cause</button>
+        <button class="tab-btn" onclick="switchTab(event, 'batch-tab')"><i data-lucide="calendar"></i> Production Batch & Age</button>
+    </div>
+
+    <!-- Main Views -->
+    <!-- View 1: Executive Summary & Daily Trend -->
+    <div id="executive-tab" class="tab-content active">
+        <div class="grid-container">
+            <div class="card col-4">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="lightbulb" style="color: var(--accent-amber);"></i> ข้อมูลเบื้องหลังและข้อมูลเชิงลึก (Insights)</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-item">
+                        <div class="insight-bullet"></div>
+                        <div class="insight-text">
+                            <strong>ปริมาณการเคลมรายวัน:</strong> ดูแนวโน้มปริมาณการเคลมเพื่อจัดสรรกำลังช่างเทคนิคให้สอดคล้องกับ Workload รายวัน
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-bullet"></div>
+                        <div class="insight-text">
+                            <strong>เป้าหมายหลัก:</strong> วิเคราะห์มูลค่าความเสียหายรวม (AmtClaimCost) ควบคู่กับอัตราการเกิด เพื่อจัดลำดับความสำคัญในการตรวจสอบปัญหาการควบคุมคุณภาพ
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-bullet"></div>
+                        <div class="insight-text">
+                            <strong>การกรองข้อมูลแบบไดนามิก:</strong> คุณสามารถเปลี่ยนตัวกรองที่แผงด้านบนเพื่อเจาะลึกเฉพาะรุ่น ภูมิภาค หรือระบบที่มีปัญหาได้ทันที
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card col-8">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="trending-up" style="color: var(--secondary);"></i> แนวโน้มปริมาณการเคลมรายวัน (Claim Date - Workload)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-daily-trend"></canvas>
+                </div>
+            </div>
+
+            <!-- Daily Detail Table -->
+            <div class="card col-12" style="margin-top: 10px;">
+                <div class="card-header" style="flex-wrap: wrap; gap: 15px;">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="list"></i> รายละเอียดเคสเคลมแบบรายวัน (Daily Claims Detail)
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <span id="selected-day-label" style="font-size: 13px; color: var(--secondary); font-weight: 500;">
+                            แสดงข้อมูลทั้งหมด (คลิกจุดในกราฟด้านบนเพื่อดูเฉพาะวัน)
+                        </span>
+                        <button id="clear-day-filter" class="theme-toggle-btn" style="padding: 4px 10px; font-size: 11px; display: none;" onclick="clearDayFilter()">
+                            แสดงทั้งหมด
+                        </button>
+                        <input type="text" id="table-search" placeholder="ค้นหาเคส, ดีลเลอร์, อะไหล่..." oninput="renderDetailTable()" 
+                               style="background: var(--filter-bg); border: 1px solid var(--input-border); color: var(--text-main); padding: 6px 12px; border-radius: 8px; font-size: 12px; outline: none; font-family: 'Kanit';">
+                    </div>
+                </div>
+                <div class="table-wrapper" style="overflow-x: auto; max-height: 400px;">
+                    <table class="detail-table">
+                        <thead>
+                            <tr>
+                                <th>เลขที่เคลม</th>
+                                <th>วันที่แจ้งเคลม</th>
+                                <th>รุ่นรถ</th>
+                                <th>สีรถ</th>
+                                <th>ชื่อชิ้นส่วนอะไหล่ (ไทย)</th>
+                                <th>ระยะไมล์</th>
+                                <th>ดีลเลอร์</th>
+                                <th>อาการที่เสีย</th>
+                                <th style="text-align: right;">มูลค่าเคลม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 2: Geographic & Dealer Analysis -->
+    <div id="geo-tab" class="tab-content">
+        <div class="grid-container">
+            <div class="card col-6">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="map" style="color: var(--primary);"></i> การกระจายตัวของเคสและมูลค่าเคลม แยกตามพื้นที่ (Region & Area)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-geo-distribution"></canvas>
+                </div>
+            </div>
+            <div class="card col-6">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="building-2" style="color: var(--accent-amber);"></i> อันดับ 10 ดีลเลอร์ที่ส่งเคลมสูงสุด (Top 10 Dealer Name)</div>
+                    <div class="toggle-btn-group">
+                        <button class="toggle-sub-btn active" id="dealer-toggle-count" onclick="setDealerMetric('count')">จำนวนเคส</button>
+                        <button class="toggle-sub-btn" id="dealer-toggle-cost" onclick="setDealerMetric('cost')">มูลค่าเคลม</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-top-dealers"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 3: Model & Part Defect Analysis -->
+    <div id="model-tab" class="tab-content">
+        <div class="grid-container">
+            <div class="card col-6">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="settings" style="color: var(--secondary);"></i> สัดส่วนจำนวนการเคลมแยกตามรุ่นและสีรถ (Model & Color Share)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-model-color"></canvas>
+                </div>
+            </div>
+            <div class="card col-6">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="pie-chart" style="color: var(--primary);"></i> สัดส่วนอาการชำรุดตามประเภทระบบ (Problem Type)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-problem-type"></canvas>
+                </div>
+            </div>
+            <div class="card col-12">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="hammer" style="color: var(--accent-pink);"></i> 10 อันดับชื่อชิ้นส่วนอะไหล่ที่ถูกเปลี่ยนเคลมสูงสุด (Top 10 Part Name (T))</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-top-parts"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 4: Voice of Customer & Technical Issues -->
+    <div id="voc-tab" class="tab-content">
+        <div class="grid-container">
+            <div class="card col-6">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="message-square" style="color: var(--secondary);"></i> คำสืบค้นยอดนิยมจากคำแจ้งเสียของลูกค้า (Voice of Customer)</div>
+                    <p style="font-size: 11px; color: var(--text-sub);">*คลิกที่คำแท็กสีเพื่อกรองแดชบอร์ดเฉพาะกลุ่มอาการ*</p>
+                </div>
+                <div class="voc-wordcloud" id="voc-tag-cloud">
+                    <!-- Dynamic tags will render here -->
+                </div>
+            </div>
+            <div class="card col-6">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="activity" style="color: var(--accent-pink);"></i> วิเคราะห์ปัญหาเชิงเทคนิคของกลไกชำรุด (Technical Problems)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-tech-problems"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 5: Production Batch & Lead Time Analysis -->
+    <div id="batch-tab" class="tab-content">
+        <div class="grid-container">
+            <div class="card col-12">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="clock" style="color: var(--secondary);"></i> ปริมาณงานเคลมจำแนกตามลอตผลิต (Production Batch Year/Month)</div>
+                </div>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="chart-production-batch"></canvas>
+                </div>
+            </div>
+            <div class="card col-6">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="gauge" style="color: var(--primary);"></i> การกระจายตัวของระยะไมล์ใช้งาน (Distance Odometer Distribution)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-distance-distribution"></canvas>
+                </div>
+            </div>
+            <div class="card col-6">
+                <div class="card-header">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="hourglass" style="color: var(--accent-amber);"></i> การกระจายตัวของระยะเวลาก่อนเคลม (Time to Failure Timeline)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-fail-timeline"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // -----------------------------------------------------------------
+    // App State Management
+    // -----------------------------------------------------------------
+    let rawDataset = []; // Stores the parsed rows as objects mapped by dynamic header names
+    let filteredDataset = [];
+    let currentDealerMetric = 'count'; // or 'cost'
+    let selectedVocTag = null; // Filter based on clicked Thai keyword
+    let activeTabId = 'executive-tab';
+    let selectedDayFilter = null; // Filter for the daily detail table
+
+    // Keep references to all Chart.js instances so they can be re-rendered cleanly
+    let charts = {};
+
+    // -----------------------------------------------------------------
+    // Drag & Drop File Upload Implementation
+    // -----------------------------------------------------------------
+    const dropZone = document.getElementById('drop-zone');
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--secondary)';
+            dropZone.style.background = 'var(--tab-hover)';
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--card-border)';
+            dropZone.style.background = 'var(--card-bg)';
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            processFile(files[0]);
+        }
+    });
+
+    function handleFileSelect(e) {
+        const files = e.target.files;
+        if (files.length > 0) {
+            processFile(files[0]);
+        }
+    }
+
+    function processFile(file) {
+        if (!file.name.endsWith('.csv')) {
+            alert('กรุณาอัปโหลดไฟล์ในรูปแบบ CSV เท่านั้น (.csv)');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                parseCSV(evt.target.result);
+                document.getElementById('status-dot').className = 'status-dot success';
+                document.getElementById('status-text').innerText = 'โหลดไฟล์ ' + file.name + ' แล้ว';
+                dropZone.style.display = 'none'; // Hide upload screen
+                
+                // Show dashboard sections
+                document.getElementById('filter-panel').style.display = 'grid';
+                document.getElementById('kpi-panel').style.display = 'grid';
+                document.getElementById('nav-tabs').style.display = 'flex';
+                
+                buildFilterOptions();
+                applyFilters();
+            } catch (err) {
+                console.error(err);
+                alert('เกิดข้อผิดพลาดในการโหลดหรือวิเคราะห์โครงสร้างไฟล์ CSV');
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    // Attempt to auto-fetch when hosted on local server
+    window.addEventListener('DOMContentLoaded', () => {
+        // Initialize Theme
+        const storedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', storedTheme);
+
+        fetch('Claim data April 2026.csv')
+            .then(res => {
+                if (res.ok) {
+                    return res.text();
+                }
+                throw new Error("Unable to auto fetch CSV");
+            })
+            .then(text => {
+                parseCSV(text);
+                document.getElementById('status-dot').className = 'status-dot success';
+                document.getElementById('status-text').innerText = 'ตรวจพบและโหลดไฟล์ข้อมูลอัตโนมัติ';
+                dropZone.style.display = 'none';
+                
+                document.getElementById('filter-panel').style.display = 'grid';
+                document.getElementById('kpi-panel').style.display = 'grid';
+                document.getElementById('nav-tabs').style.display = 'flex';
+
+                buildFilterOptions();
+                applyFilters();
+            })
+            .catch(err => {
+                console.log("Auto-fetch not available (this is normal when opening raw file:/// index). Mode: User manual upload required.");
+                document.getElementById('status-text').innerText = 'รอข้อมูล (กรุณาเลือกหรืออัปโหลดไฟล์)';
+            });
+    });
+
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        // Re-render chart layouts to adjust label colors if needed
+        applyFilters();
+    }
+
+    // -----------------------------------------------------------------
+    // Robust Double-quote and Linebreak Aware CSV Parsing
+    // -----------------------------------------------------------------
+    function parseCSV(text) {
+        let lines = [];
+        let row = [""];
+        lines.push(row);
+        let i = 0, r = 0, q = false;
+        
+        while (i < text.length) {
+            let c = text[i];
+            if (c === '"') {
+                q = !q;
+            } else if (c === ',' && !q) {
+                row.push('');
+                row = lines[r];
+            } else if ((c === '\r' || c === '\n') && !q) {
+                if (c === '\r' && text[i+1] === '\n') { i++; }
+                row = [""];
+                lines.push(row);
+                r++;
+            } else {
+                row[row.length - 1] += c;
+            }
+            i++;
+        }
+
+        // Cleanup empty rows
+        let rawRows = lines.filter(row => row.length > 1 || (row.length === 1 && row[0] !== ''));
+        if (rawRows.length < 2) return;
+
+        const rawHeaders = rawRows[0];
+        
+        // Map elements into robust object-key schemas dynamically
+        rawDataset = [];
+        for (let ri = 1; ri < rawRows.length; ri++) {
+            const dataRow = rawRows[ri];
+            if (dataRow.length !== rawHeaders.length) continue; // Skip malformed rows
+            
+            let item = {};
+            rawHeaders.forEach((header, idx) => {
+                let cleanH = header.trim();
+                item[cleanH] = dataRow[idx] ? dataRow[idx].trim() : '';
+            });
+            rawDataset.push(item);
+        }
+    }
+
+    // Helper function to extract keys robustly considering dots in CSV names
+    function getValue(obj, candidateKeys) {
+        for (let key of candidateKeys) {
+            if (obj.hasOwnProperty(key)) return obj[key];
+            let dotKey = key + '.';
+            if (obj.hasOwnProperty(dotKey)) return obj[dotKey];
+        }
+        return '';
+    }
+
+    // Helper to robustly parse date strings (e.g. Greg vs Buddhist Era support)
+    function parseDate(dateStr) {
+        if (!dateStr) return null;
+        let parts = dateStr.split('/');
+        if (parts.length === 3) {
+            let m = parseInt(parts[0], 10);
+            let d = parseInt(parts[1], 10);
+            let y = parseInt(parts[2], 10);
+            if (y > 2400) { // Buddhist Era conversion
+                y = y - 543;
+            }
+            return new Date(y, m - 1, d);
+        }
+        let parsed = new Date(dateStr);
+        if (!isNaN(parsed.getTime())) return parsed;
+        return null;
+    }
+
+    // Helper to get font colors depending on current theme
+    function getThemeFontColor() {
+        const theme = document.documentElement.getAttribute('data-theme');
+        return theme === 'light' ? '#4b5563' : '#a2a5b9';
+    }
+
+    function getThemeGridColor() {
+        const theme = document.documentElement.getAttribute('data-theme');
+        return theme === 'light' ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)';
+    }
+
+    // -----------------------------------------------------------------
+    // Populating Interactive filters
+    // -----------------------------------------------------------------
+    function buildFilterOptions() {
+        const models = new Set();
+        const regions = new Set();
+        const problemTypes = new Set();
+
+        rawDataset.forEach(row => {
+            let mod = getValue(row, ['Model']);
+            let reg = getValue(row, ['Region']);
+            let pt = getValue(row, ['Problem Type']);
+
+            if (mod) models.add(mod);
+            if (reg) regions.add(reg);
+            if (pt) problemTypes.add(pt);
+        });
+
+        // Populate Model
+        const modSelect = document.getElementById('filter-model');
+        modSelect.innerHTML = '<option value="All">-- แสดงทุกรุ่น --</option>';
+        [...models].sort().forEach(m => {
+            modSelect.innerHTML += `<option value="${m}">${m}</option>`;
+        });
+
+        // Populate Region
+        const regSelect = document.getElementById('filter-region');
+        regSelect.innerHTML = '<option value="All">-- แสดงทุกภูมิภาค --</option>';
+        [...regions].sort().forEach(r => {
+            regSelect.innerHTML += `<option value="${r}">${r}</option>`;
+        });
+
+        // Populate Problem Type
+        const ptSelect = document.getElementById('filter-problem-type');
+        ptSelect.innerHTML = '<option value="All">-- แสดงทุกระบบ --</option>';
+        [...problemTypes].sort().forEach(p => {
+            ptSelect.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // Apply Filtering Logic & Calculate Metrics
+    // -----------------------------------------------------------------
+    function applyFilters() {
+        const selectedModel = document.getElementById('filter-model').value;
+        const selectedRegion = document.getElementById('filter-region').value;
+        const selectedProblemType = document.getElementById('filter-problem-type').value;
+        const selectedDistance = document.getElementById('filter-distance').value;
+
+        filteredDataset = rawDataset.filter(row => {
+            let mod = getValue(row, ['Model']);
+            let reg = getValue(row, ['Region']);
+            let pt = getValue(row, ['Problem Type']);
+            
+            let distStr = getValue(row, ['Distance']);
+            let distance = parseInt(distStr.replace(/,/g, ''), 10) || 0;
+
+            // Global Filter Match
+            if (selectedModel !== 'All' && mod !== selectedModel) return false;
+            if (selectedRegion !== 'All' && reg !== selectedRegion) return false;
+            if (selectedProblemType !== 'All' && pt !== selectedProblemType) return false;
+
+            // Distance Match
+            if (selectedDistance === '0-5k' && distance > 5000) return false;
+            if (selectedDistance === '5k-15k' && (distance <= 5000 || distance > 15000)) return false;
+            if (selectedDistance === '15k-30k' && (distance <= 15000 || distance > 30000)) return false;
+            if (selectedDistance === '30k+' && distance <= 30000) return false;
+
+            // Voice of Customer Search filter if a tag is selected
+            if (selectedVocTag) {
+                let inform = getValue(row, ['Problem Inform']).toLowerCase();
+                if (!inform.includes(selectedVocTag.toLowerCase())) return false;
+            }
+
+            return true;
+        });
+
+        calculateKPIs();
+        renderAllCharts();
+        renderVocTagCloud();
+        renderDetailTable();
+        refreshIcons();
+    }
+
+    function calculateKPIs() {
+        let totalClaims = filteredDataset.length;
+        let totalQty = 0;
+        let totalCost = 0;
+        let mtbfSum = 0;
+        let mtbfCount = 0;
+
+        filteredDataset.forEach(row => {
+            let qty = parseInt(getValue(row, ['Qty']), 10) || 0;
+            let cost = parseFloat(getValue(row, ['AmtClaimCost'])) || 0;
+
+            totalQty += qty;
+            totalCost += cost;
+
+            // MTBF Lead-time calculation (Fail Date - Sold Date)
+            let sold = parseDate(getValue(row, ['Sold Date']));
+            let fail = parseDate(getValue(row, ['Fail Date']));
+            
+            if (sold && fail) {
+                let diffTime = fail.getTime() - sold.getTime();
+                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays >= 0) { // filter bad input dates
+                    mtbfSum += diffDays;
+                    mtbfCount++;
+                }
+            }
+        });
+
+        // Set KPI elements HTML
+        document.getElementById('kpi-total-claims').innerText = totalClaims.toLocaleString();
+        document.getElementById('kpi-total-qty').innerText = totalQty.toLocaleString();
+        document.getElementById('kpi-total-cost').innerText = '฿' + totalCost.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        
+        let mtbfAvg = mtbfCount > 0 ? (mtbfSum / mtbfCount).toFixed(1) : 0;
+        document.getElementById('kpi-mtbf').innerText = mtbfAvg > 0 ? `${parseFloat(mtbfAvg).toLocaleString()} วัน` : 'N/A';
+    }
+
+    // -----------------------------------------------------------------
+    // Visualizations Implementation (Chart.js Builder)
+    // -----------------------------------------------------------------
+    function renderAllCharts() {
+        // Shared labels/fonts colors depending on the active theme mode
+        const fontColor = getThemeFontColor();
+        const gridColor = getThemeGridColor();
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: fontColor, font: { family: 'Kanit' } } },
+                tooltip: { titleFont: { family: 'Kanit' }, bodyFont: { family: 'Kanit' } }
+            },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: fontColor, font: { family: 'Kanit' } } },
+                y: { grid: { color: gridColor }, ticks: { color: fontColor, font: { family: 'Kanit' } } }
+            }
+        };
+
+        // Render based on active tabs only to optimize performance
+        if (activeTabId === 'executive-tab') {
+            renderDailyTrendChart(commonOptions);
+        } else if (activeTabId === 'geo-tab') {
+            renderGeoDistributionChart(commonOptions);
+            renderTopDealersChart(commonOptions);
+        } else if (activeTabId === 'model-tab') {
+            renderModelColorChart(commonOptions);
+            renderProblemTypeChart(commonOptions);
+            renderTopPartsChart(commonOptions);
+        } else if (activeTabId === 'voc-tab') {
+            renderTechProblemsChart(commonOptions);
+        } else if (activeTabId === 'batch-tab') {
+            renderProductionBatchChart(commonOptions);
+            renderDistanceDistributionChart(commonOptions);
+            renderFailTimelineChart(commonOptions);
+        }
+    }
+
+    // --- Page 1: Daily Claims Trend Line Chart ---
+    function renderDailyTrendChart(options) {
+        let dailyCounts = {};
+        // Group by Claim Date
+        filteredDataset.forEach(row => {
+            let date = parseDate(getValue(row, ['Claim Date']));
+            if (date) {
+                let dateKey = date.getDate().toString().padStart(2, '0') + '/' + (date.getMonth() + 1).toString().padStart(2, '0');
+                dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
+            }
+        });
+
+        let sortedDates = Object.keys(dailyCounts).sort((a,b) => {
+            let partA = a.split('/');
+            let partB = b.split('/');
+            return new Date(2026, parseInt(partA[1])-1, parseInt(partA[0])) - new Date(2026, parseInt(partB[1])-1, parseInt(partB[0]));
+        });
+
+        let dataValues = sortedDates.map(d => dailyCounts[d]);
+
+        if (charts['dailyTrend']) charts['dailyTrend'].destroy();
+
+        const ctx = document.getElementById('chart-daily-trend').getContext('2d');
+        
+        // Create gorgeous neon gradient fill
+        let fillGrad = ctx.createLinearGradient(0, 0, 0, 300);
+        fillGrad.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+        fillGrad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+
+        charts['dailyTrend'] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sortedDates,
+                datasets: [{
+                    label: 'เคสเคลมรายวัน (Workload)',
+                    data: dataValues,
+                    borderColor: '#06b6d4',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#06b6d4',
+                    pointHoverRadius: 7,
+                    tension: 0.35, // Smooth Bezier
+                    fill: true,
+                    backgroundColor: fillGrad
+                }]
+            },
+            options: {
+                ...options,
+                plugins: {
+                    ...options.plugins,
+                    legend: { display: false }
+                },
+                onClick: (e, elements) => {
+                    if (elements.length > 0) {
+                        const firstElement = elements[0];
+                        const index = firstElement.index;
+                        const label = charts['dailyTrend'].data.labels[index]; // e.g. "01/04"
+                        filterByDay(label);
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Page 2: Region & Area Double Horizontal Bar Chart ---
+    function renderGeoDistributionChart(options) {
+        let regionData = {};
+        filteredDataset.forEach(row => {
+            let reg = getValue(row, ['Region']) || 'UNKNOWN';
+            let cost = parseFloat(getValue(row, ['AmtClaimCost'])) || 0;
+            if (!regionData[reg]) regionData[reg] = { count: 0, cost: 0 };
+            regionData[reg].count++;
+            regionData[reg].cost += cost;
+        });
+
+        let regions = Object.keys(regionData).sort((a, b) => regionData[b].count - regionData[a].count);
+        let counts = regions.map(r => regionData[r].count);
+        let costs = regions.map(r => Math.round(regionData[r].cost));
+
+        if (charts['geoDist']) charts['geoDist'].destroy();
+
+        const ctx = document.getElementById('chart-geo-distribution').getContext('2d');
+        charts['geoDist'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: regions,
+                datasets: [
+                    {
+                        label: 'จำนวนเคสเคลม',
+                        data: counts,
+                        backgroundColor: '#4f46e5',
+                        borderColor: '#4f46e5',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'ราคารวมเคลม (บาท)',
+                        data: costs,
+                        backgroundColor: '#ec4899',
+                        borderColor: '#ec4899',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                ...options,
+                indexAxis: 'y', // Horizontal bars
+                scales: {
+                    x: {
+                        grid: { color: options.scales.x.grid.color },
+                        ticks: { color: options.scales.x.ticks.color, font: { family: 'Kanit' } }
+                    },
+                    y: {
+                        position: 'left',
+                        grid: { display: false },
+                        ticks: { color: options.scales.y.ticks.color, font: { family: 'Kanit' } }
+                    },
+                    y1: {
+                        position: 'right',
+                        grid: { display: false },
+                        ticks: { display: false } // Hide extra ticks labels
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Page 2: Top 10 Dealers Horizontal Bar Chart ---
+    function setDealerMetric(metric) {
+        currentDealerMetric = metric;
+        document.getElementById('dealer-toggle-count').className = metric === 'count' ? 'toggle-sub-btn active' : 'toggle-sub-btn';
+        document.getElementById('dealer-toggle-cost').className = metric === 'cost' ? 'toggle-sub-btn active' : 'toggle-sub-btn';
+        const fontColor = getThemeFontColor();
+        const gridColor = getThemeGridColor();
+        renderTopDealersChart({
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: fontColor, font: { family: 'Kanit' } } },
+                tooltip: { titleFont: { family: 'Kanit' }, bodyFont: { family: 'Kanit' } }
+            },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: fontColor, font: { family: 'Kanit' } } },
+                y: { grid: { color: gridColor }, ticks: { color: fontColor, font: { family: 'Kanit' } } }
+            }
+        });
+    }
+
+    function renderTopDealersChart(options) {
+        let dealerData = {};
+        filteredDataset.forEach(row => {
+            let name = getValue(row, ['Dealer Name']) || 'UNKNOWN';
+            let cost = parseFloat(getValue(row, ['AmtClaimCost'])) || 0;
+            if (!dealerData[name]) dealerData[name] = { count: 0, cost: 0 };
+            dealerData[name].count++;
+            dealerData[name].cost += cost;
+        });
+
+        let sortedDealers = Object.keys(dealerData).sort((a,b) => {
+            if (currentDealerMetric === 'count') {
+                return dealerData[b].count - dealerData[a].count;
+            } else {
+                return dealerData[b].cost - dealerData[a].cost;
+            }
+        }).slice(0, 10);
+
+        let dataValues = sortedDealers.map(d => {
+            return currentDealerMetric === 'count' ? dealerData[d].count : Math.round(dealerData[d].cost);
+        });
+
+        if (charts['topDealers']) charts['topDealers'].destroy();
+
+        const ctx = document.getElementById('chart-top-dealers').getContext('2d');
+        charts['topDealers'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedDealers.map(d => d.replace(/จำกัด|สาขา/g, '').trim()), // Truncate clean names
+                datasets: [{
+                    label: currentDealerMetric === 'count' ? 'จำนวนเคส' : 'มูลค่าเคลม (บาท)',
+                    data: dataValues,
+                    backgroundColor: currentDealerMetric === 'count' ? '#06b6d4' : '#f59e0b',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                ...options,
+                indexAxis: 'y',
+                plugins: {
+                    ...options.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // --- Page 3: Model & Color Grouped Stacked Bar Chart ---
+    function renderModelColorChart(options) {
+        let groupMap = {}; // Model -> Color -> count
+        let allColors = new Set();
+
+        filteredDataset.forEach(row => {
+            let m = getValue(row, ['Model']) || 'UNKNOWN';
+            let c = getValue(row, ['Color']) || 'UNKNOWN';
+            allColors.add(c);
+            if (!groupMap[m]) groupMap[m] = {};
+            groupMap[m][c] = (groupMap[m][c] || 0) + 1;
+        });
+
+        let models = Object.keys(groupMap);
+        let colorArray = [...allColors];
+
+        // Custom theme friendly colors mapping for chart
+        const colorPalette = [
+            '#06b6d4', '#4f46e5', '#ec4899', '#f59e0b', '#10b981', 
+            '#8b5cf6', '#3b82f6', '#ef4444', '#6b7280', '#059669'
+        ];
+
+        let datasets = colorArray.map((color, idx) => {
+            return {
+                label: color,
+                data: models.map(m => groupMap[m][color] || 0),
+                backgroundColor: colorPalette[idx % colorPalette.length],
+                borderRadius: 4
+            };
+        });
+
+        if (charts['modelColor']) charts['modelColor'].destroy();
+
+        const ctx = document.getElementById('chart-model-color').getContext('2d');
+        charts['modelColor'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: models,
+                datasets: datasets
+            },
+            options: {
+                ...options,
+                scales: {
+                    x: { stacked: true, grid: { color: options.scales.x.grid.color }, ticks: { color: options.scales.x.ticks.color, font: { family: 'Kanit' } } },
+                    y: { stacked: true, grid: { color: options.scales.y.grid.color }, ticks: { color: options.scales.y.ticks.color, font: { family: 'Kanit' } } }
+                }
+            }
+        });
+    }
+
+    // --- Page 3: Problem Type Donut Chart ---
+    function renderProblemTypeChart(options) {
+        let ptCounts = {};
+        filteredDataset.forEach(row => {
+            let pt = getValue(row, ['Problem Type']) || 'อื่นๆ';
+            ptCounts[pt] = (ptCounts[pt] || 0) + 1;
+        });
+
+        let labels = Object.keys(ptCounts);
+        let counts = labels.map(l => ptCounts[l]);
+
+        if (charts['problemType']) charts['problemType'].destroy();
+
+        const ctx = document.getElementById('chart-problem-type').getContext('2d');
+        charts['problemType'] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: counts,
+                    backgroundColor: ['#4f46e5', '#06b6d4', '#ec4899', '#f59e0b'],
+                    borderWidth: 2,
+                    borderColor: 'rgba(255,255,255,0.05)'
+                }]
+            },
+            options: {
+                ...options,
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                cutout: '65%' // Donut shape
+            }
+        });
+    }
+
+    // --- Page 3: Top 10 Part Name (Thai) ---
+    function renderTopPartsChart(options) {
+        let partCounts = {};
+        filteredDataset.forEach(row => {
+            let part = getValue(row, ['Part Name(T)']) || getValue(row, ['Part Name']) || 'UNKNOWN';
+            partCounts[part] = (partCounts[part] || 0) + 1;
+        });
+
+        let sortedParts = Object.keys(partCounts).sort((a,b) => partCounts[b] - partCounts[a]).slice(0, 10);
+        let dataValues = sortedParts.map(p => partCounts[p]);
+
+        if (charts['topParts']) charts['topParts'].destroy();
+
+        const ctx = document.getElementById('chart-top-parts').getContext('2d');
+        charts['topParts'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedParts,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: 'rgba(79, 70, 229, 0.85)',
+                    borderColor: '#4f46e5',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                ...options,
+                plugins: {
+                    ...options.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // --- Page 4: Technical Problems Count ---
+    function renderTechProblemsChart(options) {
+        let techCounts = {};
+        filteredDataset.forEach(row => {
+            let tech = getValue(row, ['Technical Problem', 'Technical Problem Code']) || 'อื่นๆ / ตรวจสอบเพิ่มเติม';
+            if (tech.trim() === '') tech = 'อื่นๆ / ตรวจสอบเพิ่มเติม';
+            techCounts[tech] = (techCounts[tech] || 0) + 1;
+        });
+
+        let sortedTech = Object.keys(techCounts).sort((a,b) => techCounts[b] - techCounts[a]).slice(0, 8);
+        let dataValues = sortedTech.map(t => techCounts[t]);
+
+        if (charts['techProblems']) charts['techProblems'].destroy();
+
+        const ctx = document.getElementById('chart-tech-problems').getContext('2d');
+        charts['techProblems'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedTech,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: 'rgba(236, 72, 153, 0.85)',
+                    borderColor: '#ec4899',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                ...options,
+                indexAxis: 'y',
+                plugins: {
+                    ...options.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // --- Page 5: Production Batch Timeline Chart ---
+    function renderProductionBatchChart(options) {
+        let batchCounts = {};
+        filteredDataset.forEach(row => {
+            let prodDate = parseDate(getValue(row, ['Production Date.']));
+            if (prodDate) {
+                let m = (prodDate.getMonth() + 1).toString().padStart(2, '0');
+                let y = prodDate.getFullYear();
+                let key = `${y}-${m}`;
+                batchCounts[key] = (batchCounts[key] || 0) + 1;
+            }
+        });
+
+        let sortedKeys = Object.keys(batchCounts).sort();
+        let dataValues = sortedKeys.map(k => batchCounts[k]);
+
+        if (charts['prodBatch']) charts['prodBatch'].destroy();
+
+        const ctx = document.getElementById('chart-production-batch').getContext('2d');
+        charts['prodBatch'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedKeys,
+                datasets: [{
+                    label: 'เคสเคลมตามลอตผลิต',
+                    data: dataValues,
+                    backgroundColor: '#06b6d4',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                ...options,
+                plugins: {
+                    ...options.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // --- Page 5: Mileage Distance Distribution (Odometer) ---
+    function renderDistanceDistributionChart(options) {
+        let bins = {
+            '0 - 1k km': 0,
+            '1k - 5k km': 0,
+            '5k - 10k km': 0,
+            '10k - 20k km': 0,
+            '20k - 30k km': 0,
+            '30k+ km': 0
+        };
+
+        filteredDataset.forEach(row => {
+            let dStr = getValue(row, ['Distance']) || '0';
+            let dist = parseInt(dStr.replace(/,/g, ''), 10) || 0;
+
+            if (dist <= 1000) bins['0 - 1k km']++;
+            else if (dist <= 5000) bins['1k - 5k km']++;
+            else if (dist <= 10000) bins['5k - 10k km']++;
+            else if (dist <= 20000) bins['10k - 20k km']++;
+            else if (dist <= 30000) bins['20k - 30k km']++;
+            else bins['30k+ km']++;
+        });
+
+        let labels = Object.keys(bins);
+        let dataValues = labels.map(l => bins[l]);
+
+        if (charts['distDist']) charts['distDist'].destroy();
+
+        const ctx = document.getElementById('chart-distance-distribution').getContext('2d');
+        charts['distDist'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: '#4f46e5',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                ...options,
+                plugins: {
+                    ...options.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // --- Page 5: Lead Time Failure Timeline Distribution (Sold to Fail Date) ---
+    function renderFailTimelineChart(options) {
+        let bins = {
+            '< 30 วัน': 0,
+            '30 - 90 วัน': 0,
+            '90 - 180 วัน': 0,
+            '180 - 365 วัน': 0,
+            '1 - 2 ปี': 0,
+            '2 ปีขึ้นไป': 0
+        };
+
+        filteredDataset.forEach(row => {
+            let sold = parseDate(getValue(row, ['Sold Date']));
+            let fail = parseDate(getValue(row, ['Fail Date']));
+            if (sold && fail) {
+                let diffTime = fail.getTime() - sold.getTime();
+                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays >= 0) {
+                    if (diffDays <= 30) bins['< 30 วัน']++;
+                    else if (diffDays <= 90) bins['30 - 90 วัน']++;
+                    else if (diffDays <= 180) bins['90 - 180 วัน']++;
+                    else if (diffDays <= 365) bins['180 - 365 วัน']++;
+                    else if (diffDays <= 730) bins['1 - 2 ปี']++;
+                    else bins['2 ปีขึ้นไป']++;
+                }
+            }
+        });
+
+        let labels = Object.keys(bins);
+        let dataValues = labels.map(l => bins[l]);
+
+        if (charts['failTimeline']) charts['failTimeline'].destroy();
+
+        const ctx = document.getElementById('chart-fail-timeline').getContext('2d');
+        charts['failTimeline'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                ...options,
+                plugins: {
+                    ...options.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // Voice of Customer (Dynamic Thai Word Cloud Tag List)
+    // -----------------------------------------------------------------
+    function renderVocTagCloud() {
+        const cloudContainer = document.getElementById('voc-tag-cloud');
+        
+        // Define popular diagnostic Thai keywords keywords inside the claims descriptions
+        const keywords = [
+            'สตาร์ทไม่ติด', 'เสียงดัง', 'น้ำมันซึม', 'ดับ', 'วูบ', 'สวิง', 
+            'หลุด', 'แตกหัก', 'รอย', 'เบรคติด', 'ไม่ทำงาน', 'เกย์น้ำมัน', 
+            'สีตก', 'ลมยาง', 'ไฟหน้า', 'แตรไม่ดัง', 'หลวม', 'อ้า'
+        ];
+
+        let counts = {};
+        keywords.forEach(k => counts[k] = 0);
+
+        // Count matchings
+        filteredDataset.forEach(row => {
+            let inform = getValue(row, ['Problem Inform', 'Symptom']).toLowerCase();
+            keywords.forEach(kw => {
+                if (inform.includes(kw.toLowerCase())) {
+                    counts[kw]++;
+                }
+            });
+        });
+
+        let sortedKeywords = keywords.filter(k => counts[k] > 0).sort((a,b) => counts[b] - counts[a]);
+
+        cloudContainer.innerHTML = '';
+        sortedKeywords.forEach(kw => {
+            const isSelected = selectedVocTag === kw;
+            const el = document.createElement('span');
+            el.className = 'word-tag' + (isSelected ? ' selected' : '');
+            el.innerHTML = `${kw} <span class="count">${counts[kw]}</span>`;
+            el.onclick = () => {
+                if (selectedVocTag === kw) {
+                    selectedVocTag = null; // Toggle off filter
+                } else {
+                    selectedVocTag = kw; // Apply filter
+                }
+                applyFilters();
+            };
+            cloudContainer.appendChild(el);
+        });
+
+        if (sortedKeywords.length === 0) {
+            cloudContainer.innerHTML = '<p style="color: var(--text-sub); font-size: 13px;">ไม่พบคำแจ้งเสียของลูกค้าจากการกรองข้อมูลในปัจจุบัน</p>';
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // Tab Controller Switches
+    // -----------------------------------------------------------------
+    function switchTab(evt, tabId) {
+        activeTabId = tabId;
+        
+        // Remove active class from buttons and contents
+        const tablinks = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        const tabcontent = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].className = "tab-content";
+        }
+
+        // Add active classes
+        evt.currentTarget.className += " active";
+        document.getElementById(tabId).className = "tab-content active";
+
+        // Render charts specifically for active panel to improve browser speeds
+        applyFilters();
+        refreshIcons();
+    }
+
+    // -----------------------------------------------------------------
+    // Daily Detail Table Render & Filtering
+    // -----------------------------------------------------------------
+    function filterByDay(dayStr) {
+        selectedDayFilter = dayStr;
+        document.getElementById('selected-day-label').innerText = `แสดงเฉพาะข้อมูลวันที่ ${dayStr}/2026`;
+        document.getElementById('clear-day-filter').style.display = 'inline-block';
+        renderDetailTable();
+    }
+
+    function clearDayFilter() {
+        selectedDayFilter = null;
+        document.getElementById('selected-day-label').innerText = `แสดงข้อมูลทั้งหมด (คลิกจุดในกราฟด้านบนเพื่อดูเฉพาะวัน)`;
+        document.getElementById('clear-day-filter').style.display = 'none';
+        renderDetailTable();
+    }
+
+    function renderDetailTable() {
+        const tbody = document.getElementById('detail-table-body');
+        if (!tbody) return;
+        
+        const searchValue = document.getElementById('table-search').value.toLowerCase();
+        
+        let displayData = filteredDataset;
+        if (selectedDayFilter) {
+            displayData = displayData.filter(row => {
+                let date = parseDate(getValue(row, ['Claim Date']));
+                if (!date) return false;
+                let dateKey = date.getDate().toString().padStart(2, '0') + '/' + (date.getMonth() + 1).toString().padStart(2, '0');
+                return dateKey === selectedDayFilter;
+            });
+        }
+
+        // Apply text search filter
+        if (searchValue) {
+            displayData = displayData.filter(row => {
+                let claimNo = getValue(row, ['Claim No.']).toLowerCase();
+                let dealer = getValue(row, ['Dealer Name']).toLowerCase();
+                let part = (getValue(row, ['Part Name(T)']) || getValue(row, ['Part Name'])).toLowerCase();
+                let inform = getValue(row, ['Problem Inform']).toLowerCase();
+                return claimNo.includes(searchValue) || dealer.includes(searchValue) || part.includes(searchValue) || inform.includes(searchValue);
+            });
+        }
+
+        tbody.innerHTML = '';
+        
+        if (displayData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-sub); padding: 20px;">ไม่พบข้อมูลเคสเคลม</td></tr>`;
+            return;
+        }
+
+        // Show max 150 rows for viewport performance, indicate rest
+        const maxRows = 150;
+        const rowsToShow = displayData.slice(0, maxRows);
+
+        rowsToShow.forEach(row => {
+            let claimNo = getValue(row, ['Claim No.']);
+            let dateStr = getValue(row, ['Claim Date']);
+            let model = getValue(row, ['Model']);
+            let color = getValue(row, ['Color']);
+            let part = getValue(row, ['Part Name(T)']) || getValue(row, ['Part Name']);
+            let dist = parseInt(getValue(row, ['Distance']).replace(/,/g, ''), 10) || 0;
+            let dealer = getValue(row, ['Dealer Name']);
+            let inform = getValue(row, ['Problem Inform']);
+            let cost = parseFloat(getValue(row, ['AmtClaimCost'])) || 0;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 10px; font-weight: 500; color: var(--secondary);">${claimNo}</td>
+                <td style="padding: 10px;">${dateStr}</td>
+                <td style="padding: 10px;">${model}</td>
+                <td style="padding: 10px;">${color}</td>
+                <td style="padding: 10px;">${part}</td>
+                <td style="padding: 10px; font-family: 'Inter';">${dist.toLocaleString()} km</td>
+                <td style="padding: 10px;">${dealer.replace(/จำกัด/g, '').trim()}</td>
+                <td style="padding: 10px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${inform}">${inform}</td>
+                <td style="padding: 10px; text-align: right; font-weight: 500; font-family: 'Inter';">฿${cost.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if (displayData.length > maxRows) {
+            const footerRow = document.createElement('tr');
+            footerRow.innerHTML = `
+                <td colspan="9" style="text-align: center; color: var(--text-sub); padding: 12px; background: rgba(0,0,0,0.1);">
+                    แสดงผลเฉพาะ 150 รายการแรกจากทั้งหมด ${displayData.length} รายการ (กรุณาใช้การค้นหาเพื่อกรองข้อมูลเพิ่มเติม)
+                </td>
+            `;
+            tbody.appendChild(footerRow);
+        }
+    }
+
+    function refreshIcons() {
+        try {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        } catch(e) {
+            console.error("Lucide failed to render:", e);
+        }
+    }
+</script>
+</body>
+</html>
